@@ -6,7 +6,7 @@
 
 IPV4POOL="$(cat /etc/wireguard/ipv4pool)"
 
-read -r -p "Name/desscription of client: " CLIENTNAME
+read -r -p "Name/description of client: " CLIENTNAME
 CLIENTNAME="${CLIENTNAME:-unknown}"
 
 echo '
@@ -65,6 +65,7 @@ Endpoint = ${IPV4}:${WGPORT}
 PersistentKeepalive = 25
 "
 
+echo
 echo "=== Client config for ${CLIENTNAME} ==="
 echo "${CLIENT_CONF}"
 echo -n "${CLIENT_CONF}" | qrencode -t ANSI256UTF8
