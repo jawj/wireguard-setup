@@ -6,6 +6,9 @@
 
 IPV4POOL="$(cat /etc/wireguard/ipv4pool)"
 
+read -r -p "Name/desscription of client: " CLIENTNAME
+CLIENTNAME="${CLIENTNAME:-unknown}"
+
 echo '
 Public DNS servers include:
 
@@ -42,12 +45,15 @@ CLIENT_IPV4="${IPV4POOL}.0.${NEXTCLIENT}"
 IPV4="$(dig -4 +short myip.opendns.com @resolver1.opendns.com)"
 WGPORT="$(grep ListenPort /etc/wireguard/wg0.conf | grep -oE "[0-9]+")"
 
-echo "[Peer]
+echo "[Peer] # ${CLIENTNAME}
 PublicKey = ${CLIENT_PUB}
 AllowedIPs = ${CLIENT_IPV4}/32
 " >> /etc/wireguard/wg0.conf
 
-CLIENT_CONF="[Interface]
+systemctl reload wg-quick@wg0.service
+
+CLIENT_CONF="
+[Interface]
 PrivateKey = ${CLIENT_PRIV}
 Address = ${CLIENT_IPV4}/16
 DNS = ${DNS}
@@ -59,7 +65,6 @@ Endpoint = ${IPV4}:${WGPORT}
 PersistentKeepalive = 25
 "
 
+echo "=== Client config for ${CLIENTNAME} ==="
 echo "${CLIENT_CONF}"
 echo -n "${CLIENT_CONF}" | qrencode -t ANSI256UTF8
-
-systemctl reload wg-quick@wg0.service
