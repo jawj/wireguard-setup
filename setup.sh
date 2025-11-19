@@ -14,15 +14,6 @@ function exit_badly {
 [[ "$(id -u)" -eq 0 ]] || exit_badly "Please run as root (e.g. sudo ./path/to/this/script)"
 
 
-# INSTALL PACKAGES
-
-echo
-
-export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get install -y dnsutils
-
-
 # GATHER INFO
 
 echo
@@ -30,7 +21,7 @@ echo
 ETH0=$(ip route get 1.1.1.1 | grep -oP ' dev \K\S+')
 echo "Network interface: ${ETH0}"
 
-IPV4=$(dig -4 +short myip.opendns.com @resolver1.opendns.com)
+IPV4=$(curl https://v4.api.ipinfo.io/ip)
 echo "External IPv4: ${IPV4}"
 
 IPV4POOL="10.102"
@@ -57,6 +48,8 @@ echo
 
 # SET UP SYSTEM
 
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
 apt-get upgrade -y
 apt-get install -y wireguard unbound apt-utils language-pack-en iptables-persistent unattended-upgrades qrencode
 
