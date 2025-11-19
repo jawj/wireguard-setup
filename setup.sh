@@ -36,7 +36,7 @@ echo "IPv6 ULAs: ${IPV6ULA}::/64"
 echo
 
 read -r -p "Timezone (default: Europe/London): " TZONE
-TZONE="${TZONE:-'Europe/London'}"
+TZONE="${TZONE:-Europe/London}"
 
 read -r -p "Desired SSH log-in port (default: 22): " SSHPORT
 SSHPORT="${SSHPORT:-22}"
