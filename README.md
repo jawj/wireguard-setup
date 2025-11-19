@@ -31,6 +31,10 @@ To show status (as `root`):
 wg show
 ```
 
+## See also
+
+https://github.com/jawj/IKEv2-setup
+
 ## License
 
 MIT
