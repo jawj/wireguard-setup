@@ -63,5 +63,7 @@ PersistentKeepalive = 25
 
 echo
 echo "=== Client config for ${CLIENTNAME} ==="
-echo "${CLIENT_CONF}"
+echo
 echo -n "${CLIENT_CONF}" | qrencode -t ANSI256UTF8
+echo
+echo "${CLIENT_CONF}"

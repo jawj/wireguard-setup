@@ -3,10 +3,10 @@
 Bash scripts to take Ubuntu Server LTS 24.04 from clean install to fully-configured WireGuard server peer.
 
 * `setup.sh` sets up the server (run once)
-* `addclient.sh` creates a new client peer, printing the config as text and a QR code (run for each new client)
+* `addclient.sh` creates a peer, printing the config as text and a QR code (run for each new client)
 
 The server is configured for unattended security upgrades and firewalled with `iptables` to allow only SSH, WireGuard and some ICMP types.
-x
+
 ## Usage
 
 One-time only (as `root`):
