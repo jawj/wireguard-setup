@@ -1,6 +1,6 @@
 # wireguard-setup
 
-Bash scripts to take Ubuntu Server LTS 24.04 from clean install to fully-configured WireGuard server peer.
+Bash scripts to take Ubuntu Server LTS 24.04 from clean install to fully-configured WireGuard server peer, forwarding DNS queries to Cloudflare over TLS.
 
 * `setup.sh` sets up the server (run once)
 * `addclient.sh` creates a peer, printing the config as text and a QR code (run for each new client)

@@ -30,7 +30,7 @@ echo "IPv4 pool: ${IPV4POOL}.0.0/16"
 IPV6ULA="fd$(openssl rand -hex 1):$(openssl rand -hex 2):$(openssl rand -hex 2):$(openssl rand -hex 2)"
 [[ -f /etc/wireguard/ipv6ula ]] && IPV6ULA="$(cat /etc/wireguard/ipv6ula)"
 [[ -f /etc/wireguard/ipv6ula ]] || echo -n "${IPV6ULA}" > /etc/wireguard/ipv6ula
-echo "IPv6 ULAs: ${IPV6ULA}::0/64"
+echo "IPv6 ULAs: ${IPV6ULA}::/64"
 
 read -r -p "Timezone (default: Europe/London): " TZONE
 TZONE=${TZONE:-'Europe/London'}
@@ -98,16 +98,16 @@ iptables  -A INPUT -m conntrack --ctstate INVALID -j DROP
 ip6tables -A INPUT -m conntrack --ctstate INVALID -j DROP
 
 # rate-limit repeated new requests from same IP to any ports
-iptables  -I INPUT -i "${ETH0}" -m state --state NEW -m recent --set
-ip6tables -I INPUT -i "${ETH0}" -m state --state NEW -m recent --set
-iptables  -I INPUT -i "${ETH0}" -m state --state NEW -m recent --update --seconds 300 --hitcount 60 -j DROP
-ip6tables -I INPUT -i "${ETH0}" -m state --state NEW -m recent --update --seconds 300 --hitcount 60 -j DROP
+iptables  -I INPUT -i ${ETH0} -m state --state NEW -m recent --set
+ip6tables -I INPUT -i ${ETH0} -m state --state NEW -m recent --set
+iptables  -I INPUT -i ${ETH0} -m state --state NEW -m recent --update --seconds 300 --hitcount 60 -j DROP
+ip6tables -I INPUT -i ${ETH0} -m state --state NEW -m recent --update --seconds 300 --hitcount 60 -j DROP
 
 # accept SSH + WireGuard
-iptables  -A INPUT -p tcp --dport "${SSHPORT}" -j ACCEPT
-ip6tables -A INPUT -p tcp --dport "${SSHPORT}" -j ACCEPT
-iptables  -A INPUT -p udp --dport "${WGPORT}" -i "${ETH0}" -j ACCEPT
-ip6tables -A INPUT -p udp --dport "${WGPORT}" -i "${ETH0}" -j ACCEPT
+iptables  -A INPUT -p tcp --dport ${SSHPORT} -j ACCEPT
+ip6tables -A INPUT -p tcp --dport ${SSHPORT} -j ACCEPT
+iptables  -A INPUT -p udp --dport ${WGPORT} -i ${ETH0} -j ACCEPT
+ip6tables -A INPUT -p udp --dport ${WGPORT} -i ${ETH0} -j ACCEPT
 
 # accept DNS from WireGuard clients
 iptables  -A INPUT -p udp --dport 53 -i wg0 -j ACCEPT
@@ -130,14 +130,18 @@ ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 3 -j ACCEPT  # time excee
 ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 4 -j ACCEPT  # parameter problem
 
 # forward Wireguard traffic
-iptables  -A FORWARD -i "${ETH0}" -o wg0 -d "${IPV4POOL}.0.0/16" -j ACCEPT
-ip6tables -A FORWARD -i "${ETH0}" -o wg0 -d "${IPV6ULA}::/64"    -j ACCEPT
+iptables  -A FORWARD -i ${ETH0} -o wg0 -d ${IPV4POOL}.0.0/16 -j ACCEPT
+ip6tables -A FORWARD -i ${ETH0} -o wg0 -d ${IPV6ULA}::/64    -j ACCEPT
 
-iptables  -A FORWARD -i wg0 -o "${ETH0}" -s "${IPV4POOL}.0.0/16" -j ACCEPT
-ip6tables -A FORWARD -i wg0 -o "${ETH0}" -s "${IPV6ULA}::/64"    -j ACCEPT
+iptables  -A FORWARD -i wg0 -o ${ETH0} -s ${IPV4POOL}.0.0/16 -j ACCEPT
+ip6tables -A FORWARD -i wg0 -o ${ETH0} -s ${IPV6ULA}::/64    -j ACCEPT
 
-iptables  -t nat -A POSTROUTING -s "${IPV4POOL}.0.0/16" -o "${ETH0}" -j MASQUERADE
-ip6tables -t nat -A POSTROUTING -s "${IPV6ULA}::/64" -o "${ETH0}" -j MASQUERADE
+iptables  -t nat -A POSTROUTING -s ${IPV4POOL}.0.0/16 -o ${ETH0} -j MASQUERADE
+ip6tables -t nat -A POSTROUTING -s ${IPV6ULA}::/64    -o ${ETH0} -j MASQUERADE
+
+# allow traffic between WireGuard clients
+iptables  -A FORWARD -i wg0 -o wg0 -s ${IPV4POOL}.0.0/16 -d ${IPV4POOL}.0.0/16 -j ACCEPT
+ip6tables -A FORWARD -i wg0 -o wg0 -s ${IPV6ULA}::/64    -d ${IPV6ULA}::/64    -j ACCEPT
 
 # drop the rest
 iptables  -A INPUT   -j DROP
