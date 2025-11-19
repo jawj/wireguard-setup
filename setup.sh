@@ -21,7 +21,7 @@ echo
 ETH0=$(ip route get 1.1.1.1 | grep -oP ' dev \K\S+')
 echo "Network interface: ${ETH0}"
 
-IPV4=$(curl https://v4.api.ipinfo.io/ip)
+IPV4=$(curl -s https://v4.api.ipinfo.io/ip)
 echo "External IPv4: ${IPV4}"
 
 IPV4POOL="10.102"
