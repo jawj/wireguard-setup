@@ -36,13 +36,13 @@ echo "IPv6 ULAs: ${IPV6ULA}::/64"
 echo
 
 read -r -p "Timezone (default: Europe/London): " TZONE
-TZONE=${TZONE:-'Europe/London'}
+TZONE="${TZONE:-'Europe/London'}"
 
 read -r -p "Desired SSH log-in port (default: 22): " SSHPORT
-SSHPORT=${SSHPORT:-22}
+SSHPORT="${SSHPORT:-22}"
 
 read -r -p "Desired Wireguard port (default: 51820): " WGPORT
-WGPORT=${WGPORT:-51820}
+WGPORT="${WGPORT:-51820}"
 
 echo
 
@@ -105,16 +105,16 @@ iptables  -A INPUT -m conntrack --ctstate INVALID -j DROP
 ip6tables -A INPUT -m conntrack --ctstate INVALID -j DROP
 
 # rate-limit repeated new requests from same IP to any ports
-iptables  -I INPUT -i ${ETH0} -m state --state NEW -m recent --set
-ip6tables -I INPUT -i ${ETH0} -m state --state NEW -m recent --set
-iptables  -I INPUT -i ${ETH0} -m state --state NEW -m recent --update --seconds 300 --hitcount 60 -j DROP
-ip6tables -I INPUT -i ${ETH0} -m state --state NEW -m recent --update --seconds 300 --hitcount 60 -j DROP
+iptables  -I INPUT -i "${ETH0}" -m state --state NEW -m recent --set
+ip6tables -I INPUT -i "${ETH0}" -m state --state NEW -m recent --set
+iptables  -I INPUT -i "${ETH0}" -m state --state NEW -m recent --update --seconds 300 --hitcount 60 -j DROP
+ip6tables -I INPUT -i "${ETH0}" -m state --state NEW -m recent --update --seconds 300 --hitcount 60 -j DROP
 
 # accept SSH + WireGuard
-iptables  -A INPUT -p tcp --dport ${SSHPORT} -j ACCEPT
-ip6tables -A INPUT -p tcp --dport ${SSHPORT} -j ACCEPT
-iptables  -A INPUT -p udp --dport ${WGPORT} -i ${ETH0} -j ACCEPT
-ip6tables -A INPUT -p udp --dport ${WGPORT} -i ${ETH0} -j ACCEPT
+iptables  -A INPUT -p tcp --dport "${SSHPORT}" -j ACCEPT
+ip6tables -A INPUT -p tcp --dport "${SSHPORT}" -j ACCEPT
+iptables  -A INPUT -p udp --dport "${WGPORT}" -i "${ETH0}" -j ACCEPT
+ip6tables -A INPUT -p udp --dport "${WGPORT}" -i "${ETH0}" -j ACCEPT
 
 # accept DNS from WireGuard clients
 iptables  -A INPUT -p udp --dport 53 -i wg0 -j ACCEPT
@@ -137,20 +137,20 @@ ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 3 -j ACCEPT  # time excee
 ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 4 -j ACCEPT  # parameter problem
 
 # WireGuard clients <-> WireGuard clients
-iptables  -A FORWARD -i wg0 -o wg0 -s ${IPV4POOL}.0.0/16 -d ${IPV4POOL}.0.0/16 -j ACCEPT
-ip6tables -A FORWARD -i wg0 -o wg0 -s ${IPV6ULA}::/64    -d ${IPV6ULA}::/64    -j ACCEPT
+iptables  -A FORWARD -i wg0 -o wg0 -s "${IPV4POOL}.0.0/16" -d "${IPV4POOL}.0.0/16" -j ACCEPT
+ip6tables -A FORWARD -i wg0 -o wg0 -s "${IPV6ULA}::/64"    -d "${IPV6ULA}::/64"    -j ACCEPT
 
 # WireGuard clients -> Internet
-iptables  -A FORWARD -i wg0 -o ${ETH0} -s ${IPV4POOL}.0.0/16 -j ACCEPT
-ip6tables -A FORWARD -i wg0 -o ${ETH0} -s ${IPV6ULA}::/64    -j ACCEPT
+iptables  -A FORWARD -i wg0 -o "${ETH0}" -s "${IPV4POOL}.0.0/16" -j ACCEPT
+ip6tables -A FORWARD -i wg0 -o "${ETH0}" -s "${IPV6ULA}::/64"    -j ACCEPT
 
 # Internet -> WireGuard clients
-iptables  -A FORWARD -i ${ETH0} -o wg0 -d ${IPV4POOL}.0.0/16 -j ACCEPT
-ip6tables -A FORWARD -i ${ETH0} -o wg0 -d ${IPV6ULA}::/64    -j ACCEPT
+iptables  -A FORWARD -i "${ETH0}" -o wg0 -d "${IPV4POOL}.0.0/16" -j ACCEPT
+ip6tables -A FORWARD -i "${ETH0}" -o wg0 -d "${IPV6ULA}::/64"    -j ACCEPT
 
 # masquerading for WireGuard clients <-> Internet
-iptables  -t nat -A POSTROUTING -s ${IPV4POOL}.0.0/16 -o ${ETH0} -j MASQUERADE
-ip6tables -t nat -A POSTROUTING -s ${IPV6ULA}::/64    -o ${ETH0} -j MASQUERADE
+iptables  -t nat -A POSTROUTING -s "${IPV4POOL}.0.0/16" -o "${ETH0}" -j MASQUERADE
+ip6tables -t nat -A POSTROUTING -s "${IPV6ULA}::/64"    -o "${ETH0}" -j MASQUERADE
 
 # drop the rest
 iptables  -A INPUT   -j DROP
@@ -206,9 +206,6 @@ server:
     cache-max-ttl: 86400
     prefetch: yes
 
-    # for resolving WireGuard clients
-    local-zone: wg.internal static
-
     # DNS-over-TLS forwarding to Cloudflare
     forward-zone:
         name: \".\"
@@ -220,8 +217,8 @@ server:
 
 " > /etc/unbound/unbound.conf.d/wireguard-dot.conf
 
-[[ -f /etc/unbound/unbound.conf.d/wireguard-clients.conf ]] \
-  || echo "server:" > /etc/unbound/unbound.conf.d/wireguard-clients.conf
+[[ -f /etc/unbound/unbound.conf.d/wireguard-clients.conf ]] || echo "server:
+    local-zone: wg.internal static" > /etc/unbound/unbound.conf.d/wireguard-clients.conf
 
 systemctl enable unbound
 systemctl restart unbound

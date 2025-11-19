@@ -2,7 +2,7 @@
 
 # github.com/jawj/wireguard-setup
 # Copyright (c) 2025 George MacKerron
-# Released under the MIT licence: http://opensource.org/licenses/mit-license
+# Released under the MIT licence: http://opensource.org/licenses/mit-license
 
 echo "This script adds a WireGuard peer."
 
