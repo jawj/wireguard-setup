@@ -4,6 +4,16 @@
 # Copyright (c) 2025 George MacKerron
 # Released under the MIT licence: http://opensource.org/licenses/mit-license
 
+echo "This script adds a WireGuard peer."
+
+function exit_badly {
+  echo "$1"
+  exit 1
+}
+
+[[ "$(id -u)" -eq 0 ]] || exit_badly "Please run as root (e.g. sudo ./path/to/this/script)"
+[[ -f /etc/wireguard/ipv4pool ]] || exit_badly "WireGuard does not appear to have been set up via setup.sh"
+
 IPV4POOL="$(cat /etc/wireguard/ipv4pool)"
 IPV6ULA="$(cat /etc/wireguard/ipv6ula)"
 

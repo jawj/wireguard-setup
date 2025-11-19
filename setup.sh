@@ -4,15 +4,26 @@
 # Copyright (c) 2025 George MacKerron
 # Released under the MIT licence: http://opensource.org/licenses/mit-license
 
+echo "This script takes Ubuntu Server LTS 24.04 from clean install to fully-configured WireGuard server peer."
+
+function exit_badly {
+  echo "$1"
+  exit 1
+}
+
+[[ "$(id -u)" -eq 0 ]] || exit_badly "Please run as root (e.g. sudo ./path/to/this/script)"
+
 
 # INSTALL PACKAGES
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y wireguard unbound apt-utils dnsutils language-pack-en iptables-persistent unattended-upgrades qrencode
+apt-get install -y dnsutils
 
 
 # GATHER INFO
+
+echo
 
 ETH0=$(ip route get 1.1.1.1 | grep -oP ' dev \K\S+')
 echo "Network interface: ${ETH0}"
@@ -32,6 +43,8 @@ IPV6ULA="fd$(openssl rand -hex 1):$(openssl rand -hex 2):$(openssl rand -hex 2):
 [[ -f /etc/wireguard/ipv6ula ]] || echo -n "${IPV6ULA}" > /etc/wireguard/ipv6ula
 echo "IPv6 ULAs: ${IPV6ULA}::/64"
 
+echo
+
 read -r -p "Timezone (default: Europe/London): " TZONE
 TZONE=${TZONE:-'Europe/London'}
 
@@ -41,10 +54,12 @@ SSHPORT=${SSHPORT:-22}
 read -r -p "Desired Wireguard port (default: 51820): " WGPORT
 WGPORT=${WGPORT:-51820}
 
+echo
 
 # SET UP SYSTEM
 
 apt-get upgrade -y
+apt-get install -y wireguard unbound apt-utils language-pack-en iptables-persistent unattended-upgrades qrencode
 
 timedatectl set-timezone "${TZONE}"
 /usr/sbin/update-locale LANG=en_GB.UTF-8
@@ -129,19 +144,21 @@ ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 2 -j ACCEPT  # packet too
 ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 3 -j ACCEPT  # time exceeded
 ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 4 -j ACCEPT  # parameter problem
 
-# forward Wireguard traffic
-iptables  -A FORWARD -i ${ETH0} -o wg0 -d ${IPV4POOL}.0.0/16 -j ACCEPT
-ip6tables -A FORWARD -i ${ETH0} -o wg0 -d ${IPV6ULA}::/64    -j ACCEPT
+# WireGuard clients <-> WireGuard clients
+iptables  -A FORWARD -i wg0 -o wg0 -s ${IPV4POOL}.0.0/16 -d ${IPV4POOL}.0.0/16 -j ACCEPT
+ip6tables -A FORWARD -i wg0 -o wg0 -s ${IPV6ULA}::/64    -d ${IPV6ULA}::/64    -j ACCEPT
 
+# WireGuard clients -> Internet
 iptables  -A FORWARD -i wg0 -o ${ETH0} -s ${IPV4POOL}.0.0/16 -j ACCEPT
 ip6tables -A FORWARD -i wg0 -o ${ETH0} -s ${IPV6ULA}::/64    -j ACCEPT
 
+# Internet -> WireGuard clients
+iptables  -A FORWARD -i ${ETH0} -o wg0 -d ${IPV4POOL}.0.0/16 -j ACCEPT
+ip6tables -A FORWARD -i ${ETH0} -o wg0 -d ${IPV6ULA}::/64    -j ACCEPT
+
+# masquerading for WireGuard clients <-> Internet
 iptables  -t nat -A POSTROUTING -s ${IPV4POOL}.0.0/16 -o ${ETH0} -j MASQUERADE
 ip6tables -t nat -A POSTROUTING -s ${IPV6ULA}::/64    -o ${ETH0} -j MASQUERADE
-
-# allow traffic between WireGuard clients
-iptables  -A FORWARD -i wg0 -o wg0 -s ${IPV4POOL}.0.0/16 -d ${IPV4POOL}.0.0/16 -j ACCEPT
-ip6tables -A FORWARD -i wg0 -o wg0 -s ${IPV6ULA}::/64    -d ${IPV6ULA}::/64    -j ACCEPT
 
 # drop the rest
 iptables  -A INPUT   -j DROP
@@ -214,10 +231,11 @@ systemctl restart unbound
 
 # WIREGUARD
 
+umask 0077
 [[ -f /etc/wireguard/private.key ]] || wg genkey > /etc/wireguard/private.key
-chmod 600 /etc/wireguard/private.key
 wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
 
+umask 0002
 [[ -f /etc/wireguard/wg0.conf ]] || echo "
 [Interface]
 PrivateKey = $(cat /etc/wireguard/private.key)
@@ -227,4 +245,7 @@ ListenPort = ${WGPORT}
 
 systemctl enable wg-quick@wg0
 systemctl restart wg-quick@wg0
+
+echo
+
 wg show
