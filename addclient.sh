@@ -10,26 +10,6 @@ IPV6ULA="$(cat /etc/wireguard/ipv6ula)"
 read -r -p "Name/description of client: " CLIENTNAME
 CLIENTNAME="${CLIENTNAME:-unknown}"
 
-echo '
-Public DNS servers include:
-
-1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001        Cloudflare
-1.1.1.2,1.0.0.2,2606:4700:4700::1112,2606:4700:4700::1002        + block malware
-1.1.1.3,1.0.0.3,2606:4700:4700::1113,2606:4700:4700::1003        + block malware, adult
-
-94.140.14.140,94.140.14.141,2a10:50c0::1:ff,2a10:50c0::2:ff      AdGuard (non-filtering)
-94.140.14.14,94.140.15.15,2a10:50c0::ad1:ff,2a10:50c0::ad2:ff    + block ads
-94.140.14.15,94.140.15.16,2a10:50c0::bad1:ff,2a10:50c0::bad2:ff  + block ads, adult
-
-9.9.9.10,149.112.112.10,2620:fe::10,2620:fe::fe:10               Quad9 (unsecured)
-9.9.9.9,149.112.112.112,2620:fe::fe,2620:fe::9                   + block malware
-
-8.8.8.8,8.8.4.4,2001:4860:4860::8888,2001:4860:4860::8844        Google
-'
-
-read -r -p "DNS servers for client (default: 1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001): " DNS
-DNS="${DNS:-1.1.1.1,1.0.0.1,2606:4700:4700::1111,2606:4700:4700::1001}"
-
 NEXTCLIENT="$((2 + $(grep -c "\[Peer\]" /etc/wireguard/wg0.conf || true)))"
 NEXTHEX="$(printf "%X" "${NEXTCLIENT}")"
 
@@ -52,7 +32,7 @@ CLIENT_CONF="
 [Interface]
 PrivateKey = ${CLIENT_PRIV}
 Address = ${CLIENT_IPV4}/16,${CLIENT_IPV6}/64
-DNS = ${DNS}
+DNS = ${IPV4POOL}.0.1,${IPV6ULA}::1
 
 [Peer]
 PublicKey = $(cat /etc/wireguard/public.key)

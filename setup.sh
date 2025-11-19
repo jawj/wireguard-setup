@@ -4,11 +4,13 @@
 # Copyright (c) 2025 George MacKerron
 # Released under the MIT licence: http://opensource.org/licenses/mit-license
 
+
 # INSTALL PACKAGES
 
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y wireguard apt-utils dnsutils language-pack-en iptables-persistent unattended-upgrades qrencode
+apt-get install -y wireguard unbound apt-utils dnsutils language-pack-en iptables-persistent unattended-upgrades qrencode
+
 
 # GATHER INFO
 
@@ -28,7 +30,7 @@ echo "IPv4 pool: ${IPV4POOL}.0.0/16"
 IPV6ULA="fd$(openssl rand -hex 1):$(openssl rand -hex 2):$(openssl rand -hex 2):$(openssl rand -hex 2)"
 [[ -f /etc/wireguard/ipv6ula ]] && IPV6ULA="$(cat /etc/wireguard/ipv6ula)"
 [[ -f /etc/wireguard/ipv6ula ]] || echo -n "${IPV6ULA}" > /etc/wireguard/ipv6ula
-echo "IPv6 ULAs: ${IPV6ULA}::/64"
+echo "IPv6 ULAs: ${IPV6ULA}::0/64"
 
 read -r -p "Timezone (default: Europe/London): " TZONE
 TZONE=${TZONE:-'Europe/London'}
@@ -38,6 +40,7 @@ SSHPORT=${SSHPORT:-22}
 
 read -r -p "Desired Wireguard port (default: 51820): " WGPORT
 WGPORT=${WGPORT:-51820}
+
 
 # SET UP SYSTEM
 
@@ -51,7 +54,7 @@ sed -r \
 -e 's|^//Unattended-Upgrade::Automatic-Reboot "false";$|Unattended-Upgrade::Automatic-Reboot "true";|' \
 -e 's|^//Unattended-Upgrade::Remove-Unused-Dependencies "false";|Unattended-Upgrade::Remove-Unused-Dependencies "true";|' \
 -e 's|^//Unattended-Upgrade::Automatic-Reboot-Time "02:00";$|Unattended-Upgrade::Automatic-Reboot-Time "03:00";|' \
--i.original /etc/apt/apt.conf.d/50unattended-upgrades
+-i /etc/apt/apt.conf.d/50unattended-upgrades
 
 echo 'APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Download-Upgradeable-Packages "1";
@@ -63,9 +66,10 @@ service unattended-upgrades restart
 
 sed -r \
 -e "s/^#?Port [0-9]+$/Port ${SSHPORT}/" \
--i.original /etc/ssh/sshd_config
+-i /etc/ssh/sshd_config
 
 service ssh restart
+
 
 # FIREWALL
 
@@ -105,6 +109,12 @@ ip6tables -A INPUT -p tcp --dport "${SSHPORT}" -j ACCEPT
 iptables  -A INPUT -p udp --dport "${WGPORT}" -i "${ETH0}" -j ACCEPT
 ip6tables -A INPUT -p udp --dport "${WGPORT}" -i "${ETH0}" -j ACCEPT
 
+# accept DNS from WireGuard clients
+iptables  -A INPUT -p udp --dport 53 -i wg0 -j ACCEPT
+ip6tables -A INPUT -p udp --dport 53 -i wg0 -j ACCEPT
+iptables  -A INPUT -p tcp --dport 53 -i wg0 -j ACCEPT
+ip6tables -A INPUT -p tcp --dport 53 -i wg0 -j ACCEPT
+
 # ICMP IPv4
 iptables -A INPUT -p icmp -m icmp --icmp-type 8 -m limit --limit 1/second -j ACCEPT  # rate-limited ping
 iptables -A INPUT -p icmp -m icmp --icmp-type 3 -j ACCEPT  # destination unreachable
@@ -138,28 +148,71 @@ ip6tables -A FORWARD -j DROP
 # save
 netfilter-persistent save
 
-# NETWORKING
 
-grep -Fq 'jawj/wireguard-setup' /etc/sysctl.conf || echo "
-# https://github.com/jawj/wireguard-setup
+# IP FORWARDING
 
-# IPv4
+echo "
+# WireGuard, IPv4
 net.ipv4.ip_forward = 1
 
-# IPv6 (https://dotat.at/@/2024-04-30-wireguard.html)
+# WireGuard, IPv6 (https://dotat.at/@/2024-04-30-wireguard.html)
 net.ipv6.conf.all.forwarding = 1
 net.ipv6.conf.${ETH0}.accept_ra = 2
-" >> /etc/sysctl.conf
+" > /etc/sysctl.conf
 
 sysctl -p
 
+
+# DNS FORWARDING
+
+echo "
+server:
+    interface: ${IPV4POOL}.0.1
+    interface: ${IPV6ULA}::1
+
+    access-control: ${IPV4POOL}.0.0/16 allow
+    access-control: ${IPV6ULA}::/64 allow
+    access-control: 0.0.0.0/0 refuse
+    access-control: ::/0 refuse
+
+    do-ip4: yes
+    do-ip6: yes
+    do-udp: yes
+    do-tcp: yes
+
+    # privacy and security
+    hide-identity: yes
+    hide-version: yes
+    harden-glue: yes
+    harden-dnssec-stripped: yes
+    use-caps-for-id: no
+
+    # performance
+    cache-max-ttl: 86400
+    prefetch: yes
+
+    # DNS-over-TLS forwarding to Cloudflare
+    forward-zone:
+        name: \".\"
+        forward-tls-upstream: yes
+        forward-addr: 1.1.1.1@853#cloudflare-dns.com
+        forward-addr: 1.0.0.1@853#cloudflare-dns.com
+        forward-addr: 2606:4700:4700::1111@853#cloudflare-dns.com
+        forward-addr: 2606:4700:4700::1001@853#cloudflare-dns.com
+
+" > /etc/unbound/unbound.conf.d/wireguard-dot.conf
+
+systemctl enable unbound
+systemctl restart unbound
+
+
 # WIREGUARD
 
-wg genkey > /etc/wireguard/private.key
+[[ -f /etc/wireguard/private.key ]] || wg genkey > /etc/wireguard/private.key
 chmod 600 /etc/wireguard/private.key
 wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
 
-echo "
+[[ -f /etc/wireguard/wg0.conf ]] || echo "
 [Interface]
 PrivateKey = $(cat /etc/wireguard/private.key)
 Address = ${IPV4POOL}.0.1/16,${IPV6ULA}::1/64
@@ -167,5 +220,5 @@ ListenPort = ${WGPORT}
 " > /etc/wireguard/wg0.conf
 
 systemctl enable wg-quick@wg0
-systemctl start wg-quick@wg0
+systemctl restart wg-quick@wg0
 wg show
