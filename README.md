@@ -12,7 +12,7 @@ The server is configured for unattended security upgrades and firewalled with `i
 One-time only (as `root`):
 
 ```bash
-wget https://raw.githubusercontent.com/jawj/wireguard-setup/refs/heads/main/IPv4-only/setup.sh
+wget https://raw.githubusercontent.com/jawj/wireguard-setup/refs/heads/main/setup.sh
 chmod u+x setup.sh
 ./setup.sh
 ```
@@ -20,7 +20,7 @@ chmod u+x setup.sh
 To add a client (as `root`):
 
 ```bash
-wget https://raw.githubusercontent.com/jawj/wireguard-setup/refs/heads/main/IPv4-only/addclient.sh
+wget https://raw.githubusercontent.com/jawj/wireguard-setup/refs/heads/main/addclient.sh
 chmod u+x addclient.sh
 ./addclient.sh
 ```
