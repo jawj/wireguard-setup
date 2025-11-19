@@ -180,6 +180,8 @@ server:
     do-udp: yes
     do-tcp: yes
 
+    tls-cert-bundle: /etc/ssl/certs/ca-certificates.crt
+
     # privacy and security
     hide-identity: yes
     hide-version: yes
