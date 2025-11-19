@@ -28,7 +28,7 @@ CLIENT_PUB="$(echo -n "${CLIENT_PRIV}" | wg pubkey)"
 CLIENT_IPV4="${IPV4POOL}.0.${NEXTCLIENT}"
 CLIENT_IPV6="${IPV6ULA}::${NEXTHEX}"
 
-IPV4="$(dig -4 +short myip.opendns.com @resolver1.opendns.com)"
+IPV4="$(curl -s https://v4.api.ipinfo.io/ip)"
 WGPORT="$(grep ListenPort /etc/wireguard/wg0.conf | grep -oE "[0-9]+")"
 
 echo "[Peer] # ${CLIENTNAME}
