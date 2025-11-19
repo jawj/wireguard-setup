@@ -16,6 +16,8 @@ function exit_badly {
 
 # INSTALL PACKAGES
 
+echo
+
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y dnsutils
@@ -30,9 +32,6 @@ echo "Network interface: ${ETH0}"
 
 IPV4=$(dig -4 +short myip.opendns.com @resolver1.opendns.com)
 echo "External IPv4: ${IPV4}"
-
-IPV6=$(dig AAAA +short myip.opendns.com @resolver1.opendns.com)
-echo "External IPv6: ${IPV6}"
 
 IPV4POOL="10.102"
 echo -n "${IPV4POOL}" > /etc/wireguard/ipv4pool
