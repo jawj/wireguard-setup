@@ -233,7 +233,6 @@ umask 0077
 [[ -f /etc/wireguard/private.key ]] || wg genkey > /etc/wireguard/private.key
 wg pubkey < /etc/wireguard/private.key > /etc/wireguard/public.key
 
-umask 0002
 [[ -f /etc/wireguard/wg0.conf ]] || echo "
 [Interface]
 PrivateKey = $(cat /etc/wireguard/private.key)
