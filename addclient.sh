@@ -17,7 +17,7 @@ function exit_badly {
 IPV4POOL="$(cat /etc/wireguard/ipv4pool)"
 IPV6ULA="$(cat /etc/wireguard/ipv6ula)"
 
-read -r -p "Name/description of client: " CLIENTNAME
+read -r -p "DNS name for client (a-z, 0-9 and - only): " CLIENTNAME
 CLIENTNAME="${CLIENTNAME:-unknown}"
 
 NEXTCLIENT="$((2 + $(grep -c "\[Peer\]" /etc/wireguard/wg0.conf || true)))"
@@ -37,6 +37,11 @@ AllowedIPs = ${CLIENT_IPV4}/32,${CLIENT_IPV6}/128
 " >> /etc/wireguard/wg0.conf
 
 systemctl reload wg-quick@wg0.service
+
+echo "    local-data: \"${CLIENTNAME}.wg.internal. 3600 IN A ${CLIENT_IPV4}\"" >> /etc/unbound/unbound.conf.d/wireguard-clients.conf
+echo "    local-data: \"${CLIENTNAME}.wg.internal. 3600 IN AAAA ${CLIENT_IPV6}\"" >> /etc/unbound/unbound.conf.d/wireguard-clients.conf
+
+systemctl reload unbound
 
 CLIENT_CONF="
 [Interface]

@@ -7,6 +7,8 @@ Bash scripts to take Ubuntu Server LTS 24.04 from clean install to fully-configu
 
 The server is configured for unattended security upgrades and firewalled with `iptables` to allow only SSH, WireGuard and some ICMP types.
 
+Clients are visible to each other, and can be found via DNS as `my-client-name.wg.internal`.
+
 ## Usage
 
 One-time only (as `root`):

@@ -206,6 +206,9 @@ server:
     cache-max-ttl: 86400
     prefetch: yes
 
+    # for resolving WireGuard clients
+    local-zone: wg.internal static
+
     # DNS-over-TLS forwarding to Cloudflare
     forward-zone:
         name: \".\"
@@ -216,6 +219,9 @@ server:
         forward-addr: 2606:4700:4700::1001@853#cloudflare-dns.com
 
 " > /etc/unbound/unbound.conf.d/wireguard-dot.conf
+
+[[ -f /etc/unbound/unbound.conf.d/wireguard-clients.conf ]] \
+  || echo "server:" > /etc/unbound/unbound.conf.d/wireguard-clients.conf
 
 systemctl enable unbound
 systemctl restart unbound
