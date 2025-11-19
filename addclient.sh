@@ -17,7 +17,7 @@ function exit_badly {
 IPV4POOL="$(cat /etc/wireguard/ipv4pool)"
 IPV6ULA="$(cat /etc/wireguard/ipv6ula)"
 
-read -r -p "DNS name for client (a-z, 0-9 and - only): " CLIENTNAME
+read -r -p "Local DNS name for client (a-z, 0-9 and - only): " CLIENTNAME
 CLIENTNAME="${CLIENTNAME:-unknown}"
 
 NEXTCLIENT="$((2 + $(grep -c "\[Peer\]" /etc/wireguard/wg0.conf || true)))"
