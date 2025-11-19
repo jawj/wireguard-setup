@@ -105,15 +105,6 @@ ip6tables -A INPUT -p tcp --dport "${SSHPORT}" -j ACCEPT
 iptables  -A INPUT -p udp --dport "${WGPORT}" -i "${ETH0}" -j ACCEPT
 ip6tables -A INPUT -p udp --dport "${WGPORT}" -i "${ETH0}" -j ACCEPT
 
-# forward Wireguard traffic
-iptables  -A FORWARD -i "${ETH0}" -o wg0 -d "${IPV4POOL}.0.0/16" -j ACCEPT
-ip6tables -A FORWARD -i "${ETH0}" -o wg0 -d "${IPV6ULA}::/64"    -j ACCEPT
-iptables  -A FORWARD -i wg0 -o "${ETH0}" -s "${IPV4POOL}.0.0/16" -j ACCEPT
-ip6tables -A FORWARD -i wg0 -o "${ETH0}" -s "${IPV6ULA}::/64"    -j ACCEPT
-
-iptables  -t nat -A POSTROUTING -s "${IPV4POOL}.0.0/16" -o "${ETH0}" -j MASQUERADE
-ip6tables -t nat -A POSTROUTING -s "${IPV6ULA}::/64" -o "${ETH0}" -j MASQUERADE
-
 # ICMP IPv4
 iptables -A INPUT -p icmp -m icmp --icmp-type 8 -m limit --limit 1/second -j ACCEPT  # rate-limited ping
 iptables -A INPUT -p icmp -m icmp --icmp-type 3 -j ACCEPT  # destination unreachable
@@ -127,6 +118,16 @@ ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 1 -j ACCEPT  # destinatio
 ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 2 -j ACCEPT  # packet too big
 ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 3 -j ACCEPT  # time exceeded
 ip6tables -A INPUT -p ipv6-icmp -m icmp6 --icmpv6-type 4 -j ACCEPT  # parameter problem
+
+# forward Wireguard traffic
+iptables  -A FORWARD -i "${ETH0}" -o wg0 -d "${IPV4POOL}.0.0/16" -j ACCEPT
+ip6tables -A FORWARD -i "${ETH0}" -o wg0 -d "${IPV6ULA}::/64"    -j ACCEPT
+
+iptables  -A FORWARD -i wg0 -o "${ETH0}" -s "${IPV4POOL}.0.0/16" -j ACCEPT
+ip6tables -A FORWARD -i wg0 -o "${ETH0}" -s "${IPV6ULA}::/64"    -j ACCEPT
+
+iptables  -t nat -A POSTROUTING -s "${IPV4POOL}.0.0/16" -o "${ETH0}" -j MASQUERADE
+ip6tables -t nat -A POSTROUTING -s "${IPV6ULA}::/64" -o "${ETH0}" -j MASQUERADE
 
 # drop the rest
 iptables  -A INPUT   -j DROP
