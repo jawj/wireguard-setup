@@ -11,28 +11,28 @@ Clients are visible to each other, and can be found via DNS as `my-client-name.w
 
 ## Usage
 
-One-time only (as `root`):
+One-time only:
 
 ```bash
 wget https://raw.githubusercontent.com/jawj/wireguard-setup/refs/heads/main/setup.sh
-chmod u+x setup.sh
-./setup.sh
+chmod +x setup.sh
+sudo ./setup.sh
 ```
 
-To add a client (as `root`):
+To add a client:
 
 ```bash
 wget https://raw.githubusercontent.com/jawj/wireguard-setup/refs/heads/main/addclient.sh
-chmod u+x addclient.sh
-./addclient.sh
+chmod +x addclient.sh
+sudo ./addclient.sh
 ```
 
 Note that IP addresses are currently allocated simply by counting how many clients are already configured. Manually deleting users from `/etc/wireguard/wg0.conf` may therefore cause new users to duplicate existing users' IP addresses.
 
-To show status (as `root`):
+To show status:
 
 ```bash
-wg show
+sudo wg show
 ```
 
 ## See also
