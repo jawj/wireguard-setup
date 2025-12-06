@@ -27,6 +27,8 @@ chmod u+x addclient.sh
 ./addclient.sh
 ```
 
+Note that IP addresses are currently allocated simply by counting how many clients are already configured. Manually deleting users from `/etc/wireguard/wg0.conf` may therefore cause new users to duplicate existing users' IP addresses.
+
 To show status (as `root`):
 
 ```bash
